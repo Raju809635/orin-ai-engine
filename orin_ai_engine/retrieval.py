@@ -7,7 +7,6 @@ from functools import lru_cache
 from typing import Any
 
 import chromadb
-from sentence_transformers import SentenceTransformer
 
 from .config import CHROMA_DIR, DEFAULT_COLLECTION, DEFAULT_EMBEDDING_MODEL
 from .text_utils import clean_text
@@ -31,7 +30,8 @@ def _where(board: str | None, class_level: int | None, subject: str | None, chap
 
 
 @lru_cache(maxsize=2)
-def get_embedding_model(model_name: str = DEFAULT_EMBEDDING_MODEL) -> SentenceTransformer:
+def get_embedding_model(model_name: str = DEFAULT_EMBEDDING_MODEL):
+    from sentence_transformers import SentenceTransformer
     return SentenceTransformer(model_name)
 
 
