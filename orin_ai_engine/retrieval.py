@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from functools import lru_cache
 from typing import Any
 
 import chromadb
@@ -29,6 +30,11 @@ def _where(board: str | None, class_level: int | None, subject: str | None, chap
     return {"$and": clauses}
 
 
+@lru_cache(maxsize=2)
+def get_embedding_model(model_name: str = DEFAULT_EMBEDDING_MODEL) -> SentenceTransformer:
+    return SentenceTransformer(model_name)
+
+
 def retrieve(
     query: str,
     board: str | None = "SSC",
@@ -39,7 +45,7 @@ def retrieve(
     model_name: str = DEFAULT_EMBEDDING_MODEL,
     collection_name: str = DEFAULT_COLLECTION,
 ) -> list[dict[str, Any]]:
-    model = SentenceTransformer(model_name)
+    model = get_embedding_model(model_name)
     embedding = model.encode([query], normalize_embeddings=True, show_progress_bar=False)[0].tolist()
     client = chromadb.PersistentClient(path=str(CHROMA_DIR))
     collection = client.get_or_create_collection(name=collection_name)

@@ -73,6 +73,26 @@ Generated output is written under `storage/` and can be rebuilt any time from ba
 .\.venv\Scripts\python -m orin_ai_engine.retrieval --board SSC --class 6 --subject Science --query "food components and nutrition"
 ```
 
+## Local API
+
+```powershell
+.\.venv\Scripts\uvicorn orin_ai_engine.api:app --reload --host 0.0.0.0 --port 8001
+```
+
+Health:
+
+```powershell
+curl http://localhost:8001/health
+```
+
+Retrieval:
+
+```powershell
+curl -X POST http://localhost:8001/retrieve `
+  -H "Content-Type: application/json" `
+  -d "{\"board\":\"SSC\",\"classLevel\":10,\"subject\":\"Mathematics\",\"chapter\":\"Real Numbers\",\"query\":\"Euclid division lemma HCF\",\"topK\":5}"
+```
+
 The engine reads academic data from:
 
 - `orin-backend/data/academics/final_dataset`
@@ -83,6 +103,14 @@ Output indexes are written under:
 - `orin-ai-engine/storage/chroma`
 - `orin-ai-engine/storage/faiss`
 - `orin-ai-engine/storage/graphs`
+
+These paths can be overridden for Render or other deployments:
+
+- `ORIN_AI_STORAGE_DIR`
+- `ORIN_ACADEMIC_DATASET_DIR`
+- `ORIN_AGGREGATE_DATASET_PATH`
+- `ORIN_EMBEDDING_MODEL`
+- `ORIN_CHROMA_COLLECTION`
 
 ## Phase 2 Metadata
 
@@ -113,3 +141,21 @@ The next integration step should expose this engine as a small read-only service
 - adaptive roadmap context
 
 The backend should call this service through an API boundary. It should not import Python modules directly, and it should not mutate student learning records through the AI engine until the read-only integration is stable.
+
+## Render Deployment
+
+This repo includes `render.yaml` for a Python web service.
+
+Render build command:
+
+```bash
+pip install --upgrade pip && pip install -r requirements.txt && python -m spacy download en_core_web_sm
+```
+
+Render start command:
+
+```bash
+uvicorn orin_ai_engine.api:app --host 0.0.0.0 --port $PORT
+```
+
+Important: generated ChromaDB/FAISS indexes are not committed. Before production retrieval works, either attach a Render disk containing `storage/` or run the index builder during a controlled setup job with academic dataset files available.
