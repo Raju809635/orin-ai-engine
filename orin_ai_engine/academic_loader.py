@@ -7,7 +7,7 @@ from typing import Any, Iterable
 
 from .config import ACADEMIC_DATASET_DIR, AGGREGATE_DATASET_PATH
 from .concept_extractor import classify_question_text, extract_concepts
-from .text_utils import clean_text, is_useful_text, semantic_windows, unique_strings
+from .text_utils import clean_for_subject, clean_text, is_useful_text, semantic_windows, unique_strings
 
 
 @dataclass
@@ -120,6 +120,7 @@ def _chunk(
     prerequisites: list[str] | None = None,
     question_category: str | None = None,
 ) -> AcademicChunk:
+    text = clean_for_subject(text, subject)
     concepts = extract_concepts(text, subject=subject, seed_terms=seed_terms, limit=14)
     return AcademicChunk(
         chunk_id=chunk_id,

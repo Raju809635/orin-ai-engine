@@ -18,7 +18,21 @@ def _batched(values: list[AcademicChunk], size: int = 128):
         yield values[index:index + size]
 
 
-def build_indexes(board: str, class_level: int, model_name: str = DEFAULT_EMBEDDING_MODEL, collection_name: str = DEFAULT_COLLECTION) -> dict:
+def _reset_collection(collection_name: str) -> None:
+    client = chromadb.PersistentClient(path=str(CHROMA_DIR))
+    try:
+        client.delete_collection(name=collection_name)
+    except Exception:
+        pass
+
+
+def build_indexes(
+    board: str,
+    class_level: int,
+    model_name: str = DEFAULT_EMBEDDING_MODEL,
+    collection_name: str = DEFAULT_COLLECTION,
+    reset_collection: bool = True,
+) -> dict:
     ensure_storage_dirs()
     chunks = load_academic_chunks(board, class_level)
     if not chunks:
@@ -26,6 +40,8 @@ def build_indexes(board: str, class_level: int, model_name: str = DEFAULT_EMBEDD
 
     model = SentenceTransformer(model_name)
     client = chromadb.PersistentClient(path=str(CHROMA_DIR))
+    if reset_collection:
+        _reset_collection(collection_name)
     collection = client.get_or_create_collection(name=collection_name, metadata={"hnsw:space": "cosine"})
 
     all_embeddings: list[np.ndarray] = []
@@ -61,9 +77,11 @@ def build_indexes(board: str, class_level: int, model_name: str = DEFAULT_EMBEDD
 
 
 def build_many(board: str, classes: list[int], model_name: str = DEFAULT_EMBEDDING_MODEL, collection_name: str = DEFAULT_COLLECTION) -> list[dict]:
+    ensure_storage_dirs()
+    _reset_collection(collection_name)
     results = []
     for class_level in classes:
-        results.append(build_indexes(board, class_level, model_name, collection_name))
+        results.append(build_indexes(board, class_level, model_name, collection_name, reset_collection=False))
     manifest_path = Path(FAISS_DIR) / f"{board.lower()}_index_manifest.json"
     manifest_path.write_text(json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")
     return results
